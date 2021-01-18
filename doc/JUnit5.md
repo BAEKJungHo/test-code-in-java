@@ -31,34 +31,126 @@
 - 기본 애노테이션
   - @Test
   - @BeforeAll / @AfterAll
+    - 메서드를 주로 `static void 로 작성` private 은 안되고 default 는 가능하다. 그리고 return type 이 없어야 한다.
+    - @BeforeAll : 모든 테스트 코드가 실행되기전 한 번 실행
+    - @AfterAll : 모든 테스트 코드가 실행된 후 한 번 실행
   - @BeforeEach / @AfterEach
+    - static 일 필요는 없고 return type 은 void
+    - @BeforeEach : 각각의 테스트 실행 이전에 한 번씩 호출
+    - @AfterEach : 각각의 테스트 실행 이후에 한 번씩 호출
   - @Disabled
+    - 테스트를 실행하고 싶지 않은 경우에 사용
   
+> Junit 5 부터는 클래스와 메서드를 public 으로 하지 않아도된다. JUnit4 는 둘 다 public 이어야 실행 가능함.
+
 ## JUnit 5 : 테스트 이름 표시하기
+
+테스트 메서드 네이밍은 주로 카멜 케이스보다는 스네이크 케이스(snake case)를 사용한다. 테스트 후
+콘솔 왼쪽 창에 테스트 메서드 명이 찍히는데 스네이크 케이스를 적용한 경우가 더 읽기 편하기 때문이다.
 
 - `@DisplayNameGeneration`
   - Method 와 Class 레퍼런스를 사용해서 테스트 이름을 표기하는 방법 설정. 기본 구현체로 ReplaceUnderscores 제공
-
+  - @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class) 
+    - A_B_C 처럼 언더스코어(Underscores)로 작성된 것을 빈 공백으로 대체(replace)한다. 따라서 읽기가 더 편해진다.
 - `@DisplayName`
   - 어떤 테스트인지 테스트 이름을 보다 쉽게 표현할 수 있는 방법을 제공하는 애노테이션. @DisplayNameGeneration 보다 우선 순위가 높다.
-
+  - @DisplayName("스터디 만들기 \uD83D\uDE31")
+    - 이모지 사용가능, 메서드명 대신 한글명으로 출력 가능
+  - @DisplayNameGeneration 보다 @DisplayName 를 사용하는 것을 더 추천한다.
+    - 언더스코어로 표현하기에는 가독성도 떨어지고 한계가 있다.
+  
 > https://junit.org/junit5/docs/current/user-guide/#writing-tests-display-names
 
 ## org.junit.jupiter.api.Assertions.*
 
 
 - 실제 값이 기대한 값과 같은지 확인
-  - assertEqulas(expected, actual)
+  - assertEquals(expected, actual, failMessage)
+  - 첫 번째 파라미터에는 기대하는 값, 두 번째 파라미터는 실제 값을 전달하면 된다.
+  
+```java
+public static void assertEquals(Object expected, Object actual, String message) {
+        AssertEquals.assertEquals(expected, actual, message);
+    }
+```
+
+- failMessage 자리에는 Supplier 함수형 인터페이스가 올 수 있다.
+  - failMessage 자리에 람다를 쓰면 좋은점이, 문자열 연산같은게 failMessage 에 존재하는 경우 최적화해서 문자열 연산을 실행한다.
+    - 즉, 테스트가 실패한 경우에만 수행하며, 그냥 문자열로 적게되면 테스트 실패, 성공에 상관없이 무조건 실행한다.
+    - 따라서 문자열 연산 비용이 많이 들거 같으면 람다를 사용하는 것이 낫다.
+
+```java 
+// assertEquals(StudyStatus.DRAFT, study.getStatus(), "test fail message");
+assertEquals(StudyStatus.DRAFT, study.getStatus(), () -> "test fail" + StudyStatus.DRAFT + "message");
+assertEquals(StudyStatus.DRAFT, study.getStatus(), new Supplier<String>() {
+            @Override
+            public String get() {
+                return "fail Message";
+            }
+        });        
+```
+
 - 값이 null이 아닌지 확인
   - assertNotNull(actual)
 - 다음 조건이 참(true)인지 확인
   - assertTrue(boolean)
 - 모든 확인 구문 확인
   - assertAll(executables...)
+  - excutable functional interface 를 넘길 수 있따.
+
+```java
+@FunctionalInterface
+@API(
+    status = Status.STABLE,
+    since = "5.0"
+)
+public interface Executable {
+    void execute() throws Throwable;
+}
+```
+
+```java
+assertAll(
+        () -> assertNotNull(study),
+        () ->  assertEquals(StudyStatus.DRAFT, study.getStatus(), () -> "test fail" + StudyStatus.DRAFT + "message"),
+        () -> assertTrue(study.getLimit() > 0, "fail Message")
+);
+```  
+
 - 예외 발생 확인
   - assertThrows(expectedType, executable)
+  - 어떠한 코드를 실행할 때, 어떠한 타입의 예외가 발생하는지 확인할 수 있다.
+
+```java
+IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> new Study(-10));
+```
+
 - 특정 시간 안에 실행이 완료되는지 확인
   - assertTimeout(duration, executable)
+  
+```java
+// 특정 시간안에, 코드가 수행되지 못하면 테스트에 실패한다.
+// 따라서 Executable 파라미터를 넘길 때 해당 코드가 오래걸리면 그 만큼 테스트하는데 시간이 소요된다.
+assertTimeout(Duration.ofSeconds(100), () -> {
+    new Study(10);
+    Thread.sleep(1000);
+});
+
+
+// 특정 시간안에, 코드가 수행되지 못하면 테스트에 실패한다.
+// Executable 을 다 수행할 때까지 기다리지 않고 지정한 시간이 지나면 자동으로 테스트를 종료한다.
+assertTimeoutPreemptively(Duration.ofSeconds(100), () -> {
+  new Study(10);
+  Thread.sleep(1000);
+});
+
+// Executable 안에 ThreadLocal 이 들어있는 경우
+스프링 트랜잭션은 ThreadLocal 을 기본 전략으로 사용하는데
+다른 스레드에서 공유하지 못한다. 트랜잭셔널 테스트는 롤백을 기본으로 테스트 하는데
+ThreadLocal 이 있으면 롤백이 안되고 DB 에 반영이 되는 경우가 있을 수 있다.
+즉, 트랜잭션 설정을 가지고 있는 스레드랑 별개의 코드로 Executable 코드를 실행하기 때문이다.
+```
   
 마지막 매개변수로 Supplier<String> 타입의 인스턴스를 람다 형태로 제공할 수 있다.
   
@@ -104,11 +196,11 @@ public @interface FastTest {
 ```java
 @FastTest
 @DisplayName("스터디 만들기 fast")
-void create_new_study() {
+void create_new_study() {}
 
 @SlowTest
 @DisplayName("스터디 만들기 slow")
-void create_new_study_again() {
+void create_new_study_again() {}
 
 ```
 
