@@ -1,18 +1,30 @@
 package me.weave.thejavatest;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.time.Duration;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumingThat;
 
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class StudyTest {
 
     @Test
     @DisplayName("스터디 만들기 \uD83D\uDE31")
+//    @EnabledOnOs({OS.MAC, OS.LINUX})
     void create_new_study() {
+        String test_env = System.getenv("TEST_ENV");
+        assumeTrue("LOCAL".equalsIgnoreCase(test_env));
+
+        assumingThat("LOCAL".equalsIgnoreCase(test_env), () -> {
+           // logic
+        });
+
         Study study = new Study(1);
         IllegalArgumentException exception =
                 assertThrows(IllegalArgumentException.class, () -> new Study(-10));

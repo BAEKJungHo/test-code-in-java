@@ -167,13 +167,15 @@ ThreadLocal 이 있으면 롤백이 안되고 DB 에 반영이 되는 경우가 
   - assumingThat(조건, 테스트)
 
 - `@Enabled___ 와 @Disabled___`
-  - OnOS
+  - OnOS : @EnabledOnOs({OS.MAC, OS.LINUX, JRE.JAVA_11}), @DisabledOnOs
   - OnJre
   - IfSystemProperty
   - IfEnvironmentVariable
   - If
   
 ## JUnit 5: 태깅과 필터링
+
+테스트가 여러개 있다면 테스트를 그룹화, 모듈화 할 수 있다.
 
 ![img](/images/1.JPG)
 
