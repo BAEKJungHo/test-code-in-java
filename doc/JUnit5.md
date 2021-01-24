@@ -214,6 +214,14 @@ void create_new_study_again() {}
     - {currentRepetition}
     - {totalRepetitions}
   - RepetitionInfo 타입의 인자를 받을 수 있다.
+  
+```java
+@DisplayName("스터디 만들기")
+@RepeatedTest(vlaue = 10, name = "{displayName}, {currentRepetition}/{totalRepetitions}")
+void repeatTest(RepetitionInfo repetitionInfo) {
+    System.out.println("test" + repetitionInfo.getCurrentRepetition() + "/" + repetitionInfo.getTotalRepetitions());
+}
+```
 
 - @ParameterizedTest
   - 테스트에 여러 다른 매개변수를 대입해가며 반복 실행한다.
@@ -230,6 +238,14 @@ void create_new_study_again() {}
   - @CvsSource
   - @CvsFileSource
   - @ArgumentSource
+  
+```java
+@ParameterizedTest
+@ValueSource(strings = {"날씨가", "많이", "춥습니다."})
+void parameterizedTest(String message) {
+    System.out.println(message);    
+}
+```
 
 - 인자 값 타입 변환
   - 암묵적인 타입 변환
@@ -237,6 +253,23 @@ void create_new_study_again() {}
   - 명시적인 타입 변환
     - SimpleArgumentConverter 상속 받은 구현체 제공
     - @ConvertWith
+
+```java
+@DisplayName("스터디 만들기")
+@ParameterizedTest(name = "{index} {displayName} message={0}")
+@ValueSource(ints = {10, 20, 40})
+void parameterizedTest(@ConvertWith(StudyConverter.class) Study study) {
+    System.out.println(study.getLimit());    
+}
+
+static class StudyConverter extends SimpleArgumentConverter {
+    @Override 
+    protected Object convert(Object source, Class<?> targetType) throws ArgumentConversionException {
+        assesrtEquals(Study.class, targetType, "Can only convert to Study");
+        return new Study(Integer.parseInt(source.toString()));
+    }
+}
+```
 
 - 인자 값 조합
   - ArgumentsAccessor
