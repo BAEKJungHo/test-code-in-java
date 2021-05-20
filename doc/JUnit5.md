@@ -98,7 +98,7 @@ assertEquals(StudyStatus.DRAFT, study.getStatus(), new Supplier<String>() {
   - assertTrue(boolean)
 - 모든 확인 구문 확인
   - assertAll(executables...)
-  - excutable functional interface 를 넘길 수 있.
+  - excutable functional interface 를 넘길 수 있다.
 
 ```java
 @FunctionalInterface
